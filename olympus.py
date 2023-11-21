@@ -91,19 +91,28 @@ def uid_is_valid(UID, cache):
         present_date = datetime.now()
         present_unix_timestamp = datetime.timestamp(present_date)*1000
         end_unix_date = card["expire_date"]
-        is_valid_now = (present_unix_timestamp < end_unix_date or end_unix_date == 0)
+        is_card_currently_active = (present_unix_timestamp < end_unix_date or end_unix_date == 0)
+        
         logger.info(f"Expiration, {is_valid_now=}: {present_date=} < {card['exp']=}")
-        return is_valid_now
+        
+        return is_card_currently_active
             
     
     card = cache.get(UID)
     if card:
         print("Card is found in cache")
         logger.info("Card is found in cache")
-        if not_expired(card):
-            return True
+        
+        #Gets either a True or False
+        is_card_active = not_expired(card)
+        
+        
+        return is_card_active
+        
+    
+    #Card isnt even recognized
     else:
-        return False
+        return None
   
 @debug
 def rewrite_user_dict(users):
@@ -279,18 +288,22 @@ def main():
             activity_pin = not activity_pin
         count += 1
 
-        card_uid = Read_MFRC522.Read_UID()
-        logger.debug(f"{card_uid=}")	
-        
         switch, button = Get_Buttons.read()
-        
-        clearance = look_up_clearance_level(card_uid, user_dict)
-        
-        is_valid = uid_is_valid(card_uid, user_dict)
-        logger.info(f"{card_uid=} {is_valid=} {switch=} {button=}") # log every scan (incl valid & switch/button state)
 
+        card_uid = Read_MFRC522.Read_UID()
+        
+        if card_uid:
+            logger.debug(f"{card_uid=}")	
+            
+            clearance = look_up_clearance_level(card_uid, user_dict)
+            
+            is_valid = uid_is_valid(card_uid, user_dict)
+            logger.info(f"{card_uid=} {is_valid=} {switch=} {button=}") # log every scan (incl valid & switch/button state)
+        else:
+            clearance = "None"
+            is_valid = False
 
-        #Easter Egg
+        #Easter Egg: Hack the Planet!
         if not card_uid and button:
             time.sleep(.5)
             switch, button = Get_Buttons.read()
@@ -299,8 +312,8 @@ def main():
                 Pi_to_OLED.New_Message("HACK THE PLANET!")
                 Pi_to_OLED.OLED_off(4)
             
-
-        if card_uid and is_valid and not switch:
+        #Open the door to an authorized user
+        elif card_uid and is_valid and not switch:
             print(switch, button)
             logger.info(f"{switch=} {button=}")
             strike_the_door()
@@ -310,9 +323,9 @@ def main():
             time.sleep(1)
             send_log(("Opened door to "+card_uid+" at "+str(datetime.now())))
         
+        #Begin SUDO mode... Adding new users or modifiying existing users
         elif card_uid and is_valid and (switch == True) and ((clearance == level_2) or (clearance == level_3)):
-            #TODO provide some feedback that we are going into a special mode here to add users
-            
+
             Pi_to_OLED.New_Message("SUDO engaged")
             Pi_to_OLED.OLED_off(100)
             time.sleep(1)
@@ -348,10 +361,10 @@ def main():
                 print("Card reading timed out")
                 logger.info("Card reading timed out")
                 Pi_to_OLED.OLED_off(5)
-                Pi_to_OLED.New_Message("Reading timed out, Mifare NFC tags only")
+                Pi_to_OLED.New_Message("Reading timed out, also Mifare NFC tags only")
                 time.sleep(3)
                 
-        
+        # A 30 day access member has been identified and lacks permission to add a new user
         elif card_uid and is_valid and (switch == True) and (clearance == level_1):
             print("Need Big M to do this")
             logger.info("Need Big M to do this")
@@ -359,7 +372,8 @@ def main():
             Pi_to_OLED.OLED_off(5)
             time.sleep(2)
         
-        elif card_uid and not is_valid:
+        # Card ID is read and recognized but has expired
+        elif card_uid and (is_valid == False):
 
             logger.info("Access expired")
             Pi_to_OLED.New_Message(f'Your 30 access expired on {user_dict[card_uid]["exp"]}')
@@ -368,10 +382,11 @@ def main():
             Pi_to_OLED.OLED_off(5)
             time.sleep(5)
         
-        elif card_uid:
+        # Card ID is read but no record of it exists
+        elif card_uid and (is_valid == None):
             print("Access Denied")
             logger.info("Access Denied")
-            Pi_to_OLED.New_Message(f"Access Denied: whois {card_uid}")
+            Pi_to_OLED.New_Message(f"Access Denied: {card_uid}")
             Pi_to_OLED.OLED_off(3)
             time.sleep(2)
             send_log(("Denied Access to " + card_uid + " at "+str(datetime.now())))

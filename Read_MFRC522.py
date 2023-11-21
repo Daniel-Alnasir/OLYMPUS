@@ -18,13 +18,13 @@ logger.debug("Starting reader")
 
 #advanced = MFRC522()
 
-def Read_UID(tries = 15, mentor_uid = None):
+def Read_UID(tries = 1, mentor_uid = None):
     reader = SimpleMFRC522()
     for i in range(0, tries):
         try:
             #uid, text = reader.read()
             uid1 = reader.read_id()
-            time.sleep(0.5)
+            time.sleep(0.25)
             uid2 = reader.read_id()
             if (uid1 == uid2) and uid1 != mentor_uid:
                 uid = str(hex(int(uid1)))
