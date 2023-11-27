@@ -93,7 +93,7 @@ def uid_is_valid(UID, cache):
         end_unix_date = card["expire_date"]
         is_card_currently_active = (present_unix_timestamp < end_unix_date or end_unix_date == 0)
         
-        logger.info(f"Expiration, {is_valid_now=}: {present_date=} < {card['exp']=}")
+        logger.info(f"Expiration, {is_card_currently_active=}: {present_date=} < {card['exp']=}")
         
         return is_card_currently_active
             
@@ -137,8 +137,7 @@ def add_uid(mentor_UID, new_UID, mentor_clearance_level, prodigy_clearance_level
     #Adds a user to the server
     print("Adding User")
     logger.info("Adding User")
-    #send_user_message("Adding User")
-    #TODO test this part
+
     current_time = datetime.now()
     current_unix_timestamp = datetime.timestamp(current_time)*1000
 
@@ -184,7 +183,22 @@ def add_uid(mentor_UID, new_UID, mentor_clearance_level, prodigy_clearance_level
             Pi_to_OLED.New_Message("New User: Please Scan QR Code (25s)")
             time.sleep(2)
             Pi_to_OLED.New_UID_QR_Image(new_UID)
-            time.sleep(23)
+            
+            start_time = datetime.now()
+            waiting_period = 60
+            while True:
+                time.sleep(.2)
+                current_time = datetime.now()
+                elapsed_time = current_time - start_time
+                switch, button = Get_Buttons.read()
+                
+                if elapsed_time.total_seconds() >= waiting_period:
+                    break
+                
+                #If you press the red button we skip the QR code
+                elif button == True:
+                    break
+
             Pi_to_OLED.OLED_off(1)
             return user_dict
         
@@ -299,9 +313,7 @@ def main():
             
             is_valid = uid_is_valid(card_uid, user_dict)
             logger.info(f"{card_uid=} {is_valid=} {switch=} {button=}") # log every scan (incl valid & switch/button state)
-        else:
-            clearance = "None"
-            is_valid = False
+    
 
         #Easter Egg: Hack the Planet!
         if not card_uid and button:
@@ -363,7 +375,15 @@ def main():
                 Pi_to_OLED.OLED_off(5)
                 Pi_to_OLED.New_Message("Reading timed out, also Mifare NFC tags only")
                 time.sleep(3)
-                
+
+            #Need to clear the variables to start our next loop fresh
+            is_valid = None
+            card_uid = None
+            prodigy_level = None
+            mentor_clearance = None
+            clearance = None
+            new_UID = None
+        
         # A 30 day access member has been identified and lacks permission to add a new user
         elif card_uid and is_valid and (switch == True) and (clearance == level_1):
             print("Need Big M to do this")
