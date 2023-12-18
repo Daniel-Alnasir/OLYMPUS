@@ -4,6 +4,7 @@
 
 import RPi.GPIO as GPIO
 from mfrc522 import SimpleMFRC522
+from mfrc522 import BasicMFRC522
 from mfrc522 import MFRC522
 import time
 
@@ -23,9 +24,13 @@ def Read_UID(tries = 2, mentor_uid = None):
     for i in range(0, tries):
         try:
             #uid, text = reader.read()
-            uid1 = reader.read_id()
+            #uid1 = reader.read_id()
 
-            if uid1 and (uid1 != mentor_uid):
+            #id = self.BasicMFRC522.read_id_no_block()
+            uid1 = BasicMFRC522.read_id_no_block()
+    
+
+            if (uid1 != None) and (uid1 != mentor_uid):
                 uid = str(hex(int(uid1)))
                 logger.debug(uid)
                 return(uid)
