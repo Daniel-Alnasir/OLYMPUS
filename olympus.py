@@ -180,8 +180,8 @@ def add_uid(mentor_UID, new_UID, mentor_clearance_level, prodigy_clearance_level
             logger.info(f"Added User {new_UID} to {prodigy_clearance_level}")
             send_log(("Added Acess from " + mentor_UID + " to " + new_UID + " at " + str(datetime.now())))
             
-            Pi_to_OLED.New_Message("New User: Please Scan QR Code (25s)")
-            time.sleep(2)
+            Pi_to_OLED.New_Message("New User: Please Scan QR Code. Red button to skip")
+            time.sleep(5)
             Pi_to_OLED.New_UID_QR_Image(new_UID)
             
             start_time = datetime.now()
@@ -375,14 +375,6 @@ def main():
                 Pi_to_OLED.OLED_off(5)
                 Pi_to_OLED.New_Message("Reading timed out, also Mifare NFC tags only")
                 time.sleep(3)
-
-            #Need to clear the variables to start our next loop fresh
-            is_valid = None
-            card_uid = None
-            prodigy_level = None
-            mentor_clearance = None
-            clearance = None
-            new_UID = None
         
         # A 30 day access member has been identified and lacks permission to add a new user
         elif card_uid and is_valid and (switch == True) and (clearance == level_1):
@@ -410,8 +402,15 @@ def main():
             Pi_to_OLED.OLED_off(3)
             time.sleep(2)
             send_log(("Denied Access to " + card_uid + " at "+str(datetime.now())))
-        else:
-            continue
+        
+        #Need to clear the variables to start our next loop fresh
+        is_valid = None
+        card_uid = None
+        prodigy_level = None
+        mentor_clearance = None
+        clearance = None
+        new_UID = None
+
     
 if __name__ == "__main__":
     try:
