@@ -353,7 +353,7 @@ def main():
             Pi_to_OLED.New_Message("Place new member card on the reader now")
             new_UID = Read_MFRC522.Read_UID(30, card_uid)
             
-            if new_UID != "":
+            if (new_UID != "") and new_UID != card_uid:
                 tmp = add_uid(card_uid, new_UID, mentor_clearance, prodigy_level, user_dict)
                 if tmp:
                     user_dict = tmp
@@ -373,7 +373,7 @@ def main():
                 print("Card reading timed out")
                 logger.info("Card reading timed out")
                 Pi_to_OLED.OLED_off(5)
-                Pi_to_OLED.New_Message("Reading timed out, also Mifare NFC tags only")
+                Pi_to_OLED.New_Message("Card Reading timed out, also Mifare NFC tags only")
                 time.sleep(3)
         
         # A 30 day access member has been identified and lacks permission to add a new user
